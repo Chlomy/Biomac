@@ -1,5 +1,5 @@
 -- ==========================================
--- SOL'S RNG TRACKER V8.8 (ANTI-FALSE POSITIVE UPDATE)
+-- SOL'S RNG TRACKER V8.9 (MERCHANT FALSE-POSITIVE FIX)
 -- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -115,38 +115,30 @@ local function sendDiscordEmbed(eventType, name, isEnd)
     end
 end
 
--- ==========================================
--- BỘ PHÂN TÍCH CHUỖI SIÊU CHUẨN (MÀNG LỌC THÉP)
--- ==========================================
 local function parseBiome(rawText, isStrict)
     if not rawText or rawText == "" then return nil end
     
     local cleanText = string.upper(rawText)
     local compactText = string.gsub(cleanText, "%s+", "") 
     
-    -- 1. Ưu tiên kiểm tra định dạng Glitched (mã UUID hoặc báo lỗi đỏ)
     if string.find(cleanText, "GLITCHED") 
        or string.find(compactText, "ERRORWHILERETRIEVINGTIMEDATA") 
        or string.find(cleanText, "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x") then
         return "GLITCHED"
     end
     
-    -- 2. Tách vỏ: Nếu chuỗi có bọc [ ] thì lấy phần bên trong, không thì lấy toàn bộ
     local content = cleanText
     local inBrackets = string.match(cleanText, "%[%s*(.-)%s*%]")
     if inBrackets then content = inBrackets end
     
-    -- Xóa khoảng trắng thừa 2 đầu để so sánh tuyệt đối
     content = string.match(content, "^%s*(.-)%s*$") or ""
 
-    -- 3. Quét Exact Match (Tuyệt đối khớp, chống lọt tên Aura như Hellfire)
     for _, biome in ipairs(BIOME_KEYWORDS) do
         if content == biome then 
             return biome 
         end
     end
     
-    -- 4. Nếu là biến Workspace (không nghiêm ngặt), cho phép xài string.find
     if not isStrict then
         for _, biome in ipairs(BIOME_KEYWORDS) do
             if string.find(content, biome) then
@@ -164,7 +156,6 @@ local function triggerBiomeChange(newBiome)
     local oldBiome = currentBiome
     currentBiome = newBiome
     
-    -- Vẫn âm thầm ghi nhận NORMAL và NULL, nhưng KHÔNG gửi tin nhắn rác
     if oldBiome ~= "" and oldBiome ~= "NORMAL" and oldBiome ~= "NULL" then 
         sendDiscordEmbed("Biome", oldBiome, true) 
     end
@@ -174,9 +165,6 @@ local function triggerBiomeChange(newBiome)
     end
 end
 
--- ==========================================
--- BỘ CHỈ HUY KIỂM TRA BIOME (CHỐNG ĐÁNH NHAU)
--- ==========================================
 local function scanUIForBiome()
     if player and player:FindFirstChild("PlayerGui") then
         local mainInterface = player.PlayerGui:FindFirstChild("MainInterface")
@@ -185,12 +173,10 @@ local function scanUIForBiome()
                 if v:IsA("TextLabel") and v.Visible then
                     local txt = v.Text
                     if txt and #txt > 0 and #txt < 75 then
-                        -- CHỈ xử lý những TextLabel có kẹp dấu [ ], từ chối mọi loại text vớ vẩn
                         if string.find(txt, "%[") and string.find(txt, "%]") then
                             local detected = parseBiome(txt, true)
                             if detected then return detected end
                         end
-                        -- Đặc cách quét mã lỗi của Glitched dù không có dấu ngoặc
                         if string.gsub(string.upper(txt), "%s+", "") == "ERRORWHILERETRIEVINGTIMEDATA" then
                             return "GLITCHED"
                         end
@@ -206,25 +192,18 @@ local function performBiomeCheck()
     local wsBiomeValue = nil
     local workspaceBiome = Workspace:FindFirstChild("Biome")
     
-    -- 1. Đọc dữ liệu từ Workspace
     if workspaceBiome and workspaceBiome:IsA("StringValue") then
         wsBiomeValue = parseBiome(workspaceBiome.Value, false)
     end
 
-    -- 2. Đọc dữ liệu từ UI
     local uiBiomeValue = scanUIForBiome()
 
-    -- 3. Phân xử (Thằng nào chuẩn thì dùng)
     local finalBiome = nil
-    
     if uiBiomeValue == "GLITCHED" then
-        -- Ưu tiên 1: Bắt được UUID nhảy múa là auto Glitched
         finalBiome = "GLITCHED"
     elseif wsBiomeValue then
-        -- Ưu tiên 2: Workspace luôn đúng với các Biome bình thường
         finalBiome = wsBiomeValue
     elseif uiBiomeValue then
-        -- Dự phòng cuối: Nếu Workspace tịt, xài tạm UI
         finalBiome = uiBiomeValue
     end
 
@@ -233,10 +212,7 @@ local function performBiomeCheck()
     end
 end
 
--- ==========================================
--- KHỞI ĐỘNG CẢM BIẾN & VÒNG LẶP
--- ==========================================
-print("[Sol's Tracker] Đang khởi động hệ thống V8.8 (Anti-False Positive)...")
+print("[Sol's Tracker] Đang khởi động hệ thống V8.9 (Public Server Merchant Safe)...")
 
 local wsBiome = Workspace:FindFirstChild("Biome")
 if wsBiome and wsBiome:IsA("StringValue") then
@@ -250,17 +226,28 @@ getgenv().SolsTrackerLoop = task.spawn(function()
     while true do
         performBiomeCheck()
 
+        -- BỘ QUÉT MERCHANT SIÊU BẢO MẬT (LỌC NGƯỜI CHƠI)
         local foundMerchants = {}
         for _, v in ipairs(Workspace:GetDescendants()) do
             if v:IsA("Model") then
-                for _, name in ipairs(MERCHANT_NAMES) do
-                    if string.find(v.Name, name) then foundMerchants[name] = true end
-                end
-                local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
-                if prompt then
-                    local textToCheck = (prompt.ObjectText or "") .. " " .. (prompt.ActionText or "")
-                    for _, name in ipairs(MERCHANT_NAMES) do
-                        if string.find(textToCheck, name) then foundMerchants[name] = true end
+                -- ĐIỀU KIỆN 1: Bỏ qua toàn bộ người chơi trong server
+                if not Players:GetPlayerFromCharacter(v) then
+                    
+                    -- ĐIỀU KIỆN 2: Bắt buộc phải có ProximityPrompt (Nút bấm E của NPC)
+                    local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+                    
+                    if prompt then
+                        local textToCheck = (prompt.ObjectText or "") .. " " .. (prompt.ActionText or "")
+                        for _, name in ipairs(MERCHANT_NAMES) do
+                            
+                            -- ĐIỀU KIỆN 3: Thuật toán %f[%a] bắt từ khóa ĐỘC LẬP (Bắt "Mari", đá "Marine")
+                            local matchName = string.find(v.Name, "%f[%a]" .. name .. "%f[%A]")
+                            local matchPrompt = string.find(textToCheck, "%f[%a]" .. name .. "%f[%A]")
+                            
+                            if matchName or matchPrompt then 
+                                foundMerchants[name] = true 
+                            end
+                        end
                     end
                 end
             end
