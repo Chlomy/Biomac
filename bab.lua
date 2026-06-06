@@ -1,5 +1,5 @@
 -- ==========================================
--- SOL'S RNG TRACKER V8.7 (SMART UI SCANNER - NO NORMAL)
+-- SOL'S RNG TRACKER V8.8 (ANTI-FALSE POSITIVE UPDATE)
 -- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -116,7 +116,66 @@ local function sendDiscordEmbed(eventType, name, isEnd)
 end
 
 -- ==========================================
--- BỘ QUÉT UI THÔNG MINH (THAY THẾ CHỈ SỐ [9])
+-- BỘ PHÂN TÍCH CHUỖI SIÊU CHUẨN (MÀNG LỌC THÉP)
+-- ==========================================
+local function parseBiome(rawText, isStrict)
+    if not rawText or rawText == "" then return nil end
+    
+    local cleanText = string.upper(rawText)
+    local compactText = string.gsub(cleanText, "%s+", "") 
+    
+    -- 1. Ưu tiên kiểm tra định dạng Glitched (mã UUID hoặc báo lỗi đỏ)
+    if string.find(cleanText, "GLITCHED") 
+       or string.find(compactText, "ERRORWHILERETRIEVINGTIMEDATA") 
+       or string.find(cleanText, "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x") then
+        return "GLITCHED"
+    end
+    
+    -- 2. Tách vỏ: Nếu chuỗi có bọc [ ] thì lấy phần bên trong, không thì lấy toàn bộ
+    local content = cleanText
+    local inBrackets = string.match(cleanText, "%[%s*(.-)%s*%]")
+    if inBrackets then content = inBrackets end
+    
+    -- Xóa khoảng trắng thừa 2 đầu để so sánh tuyệt đối
+    content = string.match(content, "^%s*(.-)%s*$") or ""
+
+    -- 3. Quét Exact Match (Tuyệt đối khớp, chống lọt tên Aura như Hellfire)
+    for _, biome in ipairs(BIOME_KEYWORDS) do
+        if content == biome then 
+            return biome 
+        end
+    end
+    
+    -- 4. Nếu là biến Workspace (không nghiêm ngặt), cho phép xài string.find
+    if not isStrict then
+        for _, biome in ipairs(BIOME_KEYWORDS) do
+            if string.find(content, biome) then
+                return biome
+            end
+        end
+    end
+    
+    return nil
+end
+
+local function triggerBiomeChange(newBiome)
+    if not newBiome or newBiome == currentBiome then return end
+    
+    local oldBiome = currentBiome
+    currentBiome = newBiome
+    
+    -- Vẫn âm thầm ghi nhận NORMAL và NULL, nhưng KHÔNG gửi tin nhắn rác
+    if oldBiome ~= "" and oldBiome ~= "NORMAL" and oldBiome ~= "NULL" then 
+        sendDiscordEmbed("Biome", oldBiome, true) 
+    end
+    
+    if currentBiome ~= "NORMAL" and currentBiome ~= "NULL" then
+        sendDiscordEmbed("Biome", currentBiome, false)
+    end
+end
+
+-- ==========================================
+-- BỘ CHỈ HUY KIỂM TRA BIOME (CHỐNG ĐÁNH NHAU)
 -- ==========================================
 local function scanUIForBiome()
     if player and player:FindFirstChild("PlayerGui") then
@@ -126,19 +185,14 @@ local function scanUIForBiome()
                 if v:IsA("TextLabel") and v.Visible then
                     local txt = v.Text
                     if txt and #txt > 0 and #txt < 75 then
-                        local cleanText = string.upper(string.match(txt, "^%s*(.-)%s*$") or "")
-                        local compactText = string.gsub(cleanText, "%s+", "") 
-                        
-                        if string.find(cleanText, "GLITCHED") 
-                           or string.find(compactText, "ERRORWHILERETRIEVINGTIMEDATA") 
-                           or string.find(cleanText, "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x") then
-                            return "GLITCHED"
+                        -- CHỈ xử lý những TextLabel có kẹp dấu [ ], từ chối mọi loại text vớ vẩn
+                        if string.find(txt, "%[") and string.find(txt, "%]") then
+                            local detected = parseBiome(txt, true)
+                            if detected then return detected end
                         end
-                        
-                        for _, biome in ipairs(BIOME_KEYWORDS) do
-                            if string.find(cleanText, biome) then 
-                                return biome 
-                            end
+                        -- Đặc cách quét mã lỗi của Glitched dù không có dấu ngoặc
+                        if string.gsub(string.upper(txt), "%s+", "") == "ERRORWHILERETRIEVINGTIMEDATA" then
+                            return "GLITCHED"
                         end
                     end
                 end
@@ -148,67 +202,53 @@ local function scanUIForBiome()
     return nil
 end
 
-local function processBiomeDetection(rawText)
-    if not rawText or rawText == "" then return end
-    
-    local cleanText = string.upper(string.match(rawText, "^%s*(.-)%s*$") or "")
-    local compactText = string.gsub(cleanText, "%s+", "") 
-    
-    local detected = nil
-    
-    if string.find(cleanText, "GLITCHED") 
-       or string.find(compactText, "ERRORWHILERETRIEVINGTIMEDATA") 
-       or string.find(cleanText, "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x") then
-        detected = "GLITCHED"
-    else
-        for _, biome in ipairs(BIOME_KEYWORDS) do
-            if string.find(cleanText, biome) then 
-                detected = biome 
-                break
-            end
-        end
-    end
-
-    if detected and detected ~= currentBiome then
-        local oldBiome = currentBiome
-        currentBiome = detected
-        
-        if oldBiome ~= "" and oldBiome ~= "NORMAL" then 
-            sendDiscordEmbed("Biome", oldBiome, true) 
-        end
-        
-        if currentBiome ~= "NORMAL" then
-            sendDiscordEmbed("Biome", currentBiome, false)
-        end
-    end
-end
-
-local function manualBiomeCheck()
-    -- 1. Ưu tiên quét biến hệ thống Workspace
+local function performBiomeCheck()
+    local wsBiomeValue = nil
     local workspaceBiome = Workspace:FindFirstChild("Biome")
+    
+    -- 1. Đọc dữ liệu từ Workspace
     if workspaceBiome and workspaceBiome:IsA("StringValue") then
-        processBiomeDetection(workspaceBiome.Value)
+        wsBiomeValue = parseBiome(workspaceBiome.Value, false)
     end
 
-    -- 2. Quét thông minh toàn bộ UI (Không dùng vị trí cứng nữa)
-    local uiBiome = scanUIForBiome()
-    if uiBiome then
-        processBiomeDetection(uiBiome)
+    -- 2. Đọc dữ liệu từ UI
+    local uiBiomeValue = scanUIForBiome()
+
+    -- 3. Phân xử (Thằng nào chuẩn thì dùng)
+    local finalBiome = nil
+    
+    if uiBiomeValue == "GLITCHED" then
+        -- Ưu tiên 1: Bắt được UUID nhảy múa là auto Glitched
+        finalBiome = "GLITCHED"
+    elseif wsBiomeValue then
+        -- Ưu tiên 2: Workspace luôn đúng với các Biome bình thường
+        finalBiome = wsBiomeValue
+    elseif uiBiomeValue then
+        -- Dự phòng cuối: Nếu Workspace tịt, xài tạm UI
+        finalBiome = uiBiomeValue
+    end
+
+    if finalBiome then
+        triggerBiomeChange(finalBiome)
     end
 end
 
--- Chỉ giữ lại Cảm biến Sự kiện cho Workspace vì nó rất ổn định
+-- ==========================================
+-- KHỞI ĐỘNG CẢM BIẾN & VÒNG LẶP
+-- ==========================================
+print("[Sol's Tracker] Đang khởi động hệ thống V8.8 (Anti-False Positive)...")
+
 local wsBiome = Workspace:FindFirstChild("Biome")
 if wsBiome and wsBiome:IsA("StringValue") then
     local conn1 = wsBiome:GetPropertyChangedSignal("Value"):Connect(function()
-        processBiomeDetection(wsBiome.Value)
+        performBiomeCheck()
     end)
     table.insert(getgenv().BiomeConnections, conn1)
 end
 
 getgenv().SolsTrackerLoop = task.spawn(function()
     while true do
-        manualBiomeCheck()
+        performBiomeCheck()
 
         local foundMerchants = {}
         for _, v in ipairs(Workspace:GetDescendants()) do
@@ -239,7 +279,6 @@ getgenv().SolsTrackerLoop = task.spawn(function()
             end
         end
 
-        -- Giảm thời gian chờ xuống 2.5s để bắt kịp tốc độ thay đổi của UI
         task.wait(2.5)
     end
 end)
