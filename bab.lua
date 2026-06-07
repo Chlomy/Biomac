@@ -1,5 +1,5 @@
 -- ==========================================
--- SOL'S RNG TRACKER V9.2 (SHARP SLIDE UI UPDATE)
+-- SOL'S RNG TRACKER V9.4 (VIP SERVER ID & PURPLE JESTER)
 -- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -51,18 +51,17 @@ SolsTrackerGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local success = pcall(function() SolsTrackerGUI.Parent = CoreGui end)
 if not success then SolsTrackerGUI.Parent = player:WaitForChild("PlayerGui") end
 
--- Tọa độ trượt
-local posHidden = UDim2.new(0, -350, 0, 55) -- Giấu hẳn ra ngoài lề trái
-local posVisible = UDim2.new(0, 15, 0, 55)  -- Vị trí khi xuất hiện
+local posHidden = UDim2.new(0, -350, 0, 55)
+local posVisible = UDim2.new(0, 15, 0, 55)  
 
 local NotifFrame = Instance.new("Frame")
 NotifFrame.Name = "NotifFrame"
 NotifFrame.Parent = SolsTrackerGUI
-NotifFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18) -- Nền tối nhám
+NotifFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 NotifFrame.BackgroundTransparency = 0.1
 NotifFrame.Position = posHidden 
 NotifFrame.Size = UDim2.new(0, 230, 0, 60)
-NotifFrame.BorderSizePixel = 1 -- Viền góc cạnh 1px cứng cáp
+NotifFrame.BorderSizePixel = 1
 NotifFrame.BorderColor3 = Color3.fromRGB(45, 45, 55)
 NotifFrame.Visible = false
 
@@ -106,7 +105,6 @@ local function checkWebhookValid()
     return false
 end
 
--- Hiệu ứng trượt Quad dứt khoát
 local tweenInfoSlideIn = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local tweenInfoSlideOut = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 
@@ -139,13 +137,11 @@ local function showNotification(biomeText)
     
     NotifFrame.Visible = true
     
-    -- Animation trượt từ trái vào
     local slideIn = TweenService:Create(NotifFrame, tweenInfoSlideIn, {Position = posVisible})
     slideIn:Play()
     
     if hideTask then task.cancel(hideTask) end
     
-    -- Animation trượt ngược ra trái để biến mất sau 4 giây
     hideTask = task.delay(4, function()
         local slideOut = TweenService:Create(NotifFrame, tweenInfoSlideOut, {Position = posHidden})
         slideOut:Play()
@@ -154,6 +150,9 @@ local function showNotification(biomeText)
     end)
 end
 
+-- ==========================================
+-- HÀM GỬI WEBHOOK LÕI
+-- ==========================================
 local function sendDiscordEmbed(eventType, name, isEnd)
     local webhookUrl = getgenv().Webhook
     if not webhookUrl or webhookUrl == "" then return false end
@@ -161,18 +160,16 @@ local function sendDiscordEmbed(eventType, name, isEnd)
     local playerName = player.Name
     local jobId = game.JobId ~= "" and game.JobId or "Private/Studio"
     local psLink = getgenv().PSLink or ""
-    local serverDisplay = (psLink ~= "") and ("[Private Server Link](" .. psLink .. ")") or ("`" .. jobId .. "`")
     
-    local serverId = "Unknown"
-    if psLink ~= "" then
-        serverId = string.sub(string.gsub(psLink, "%D", ""), 1, 10)
-        if serverId == "" then serverId = "Unknown" end
+    -- LẤY CHUẨN ID ACC/SERVER (10 SỐ)
+    local serverId = ""
+    if game.VIPServerOwnerId and game.VIPServerOwnerId ~= 0 then
+        serverId = tostring(game.VIPServerOwnerId) -- ID của chủ Private Server
     else
-        local digits = string.gsub(jobId, "%D", "")
-        serverId = string.sub(digits, 1, 10)
-        if serverId == "" then serverId = string.sub(jobId, 1, 10) end
+        serverId = tostring(player.UserId) -- ID của người đang cắm macro nếu ở Public Server
     end
 
+    local defaultServerDisplay = (psLink ~= "") and ("[Private Server Link](" .. psLink .. ")") or ("`" .. jobId .. "`")
     local unixTime = os.time()
     local timeFormat = "<t:" .. unixTime .. ":D> • <t:" .. unixTime .. ":T> ( <t:" .. unixTime .. ":R> )"
 
@@ -185,10 +182,11 @@ local function sendDiscordEmbed(eventType, name, isEnd)
         local icon = "🛒"
         if name == "Mari" then icon = "🛍️"; colorHex = 0xE91E63; pingContent = getgenv().PingMari or ""
         elseif name == "Rin" then icon = "🦊"; colorHex = 0xE67E22; pingContent = getgenv().PingRin or ""
-        elseif name == "Jester" then icon = "🃏"; colorHex = 0xF1C40F; pingContent = getgenv().PingJester or "" end
+        -- Đổi chuẩn màu Jester về Tím Neon (0x9B59B6)
+        elseif name == "Jester" then icon = "🃏"; colorHex = 0x9B59B6; pingContent = getgenv().PingJester or "" end
         
         titleText = icon .. " " .. name .. " Has Arrived!"
-        descriptionText = "**Owner:** `" .. playerName .. "`\n**Detected by:** `" .. playerName .. "`\n**Detected At:** " .. timeFormat .. "\n**Private Server:** " .. serverDisplay
+        descriptionText = "**Owner:** `" .. playerName .. "`\n**Detected by:** `" .. playerName .. "`\n**Detected At:** " .. timeFormat .. "\n**Private Server:** " .. defaultServerDisplay
 
     elseif eventType == "Biome" then
         local state = isEnd and "Ended" or "Started"
@@ -205,7 +203,13 @@ local function sendDiscordEmbed(eventType, name, isEnd)
             titleText = "👾 🙽 GLITCHED BIOME " .. state .. " 🙽"
         end
 
-        descriptionText = "**Owner:** `" .. playerName .. "`\n**Detected by:** `" .. playerName .. "`\n**Time:** " .. timeFormat .. "\n**Private Server:** " .. serverDisplay
+        -- KHI END BIOME THÌ CHỈ HIỆN 10 SỐ ID
+        local finalServerDisplay = defaultServerDisplay
+        if isEnd then
+            finalServerDisplay = "`" .. serverId .. "`"
+        end
+
+        descriptionText = "**Owner:** `" .. playerName .. "`\n**Detected by:** `" .. playerName .. "`\n**Time:** " .. timeFormat .. "\n**Private Server:** " .. finalServerDisplay
     end
 
     local embed = {
@@ -274,7 +278,6 @@ local function triggerBiomeChange(newBiome)
     local oldBiome = currentBiome
     currentBiome = newBiome
     
-    -- GỌI HIỆU ỨNG TRƯỢT MÀN HÌNH
     showNotification(currentBiome)
     
     if oldBiome ~= "" and oldBiome ~= "NORMAL" and oldBiome ~= "NULL" then 
@@ -333,7 +336,7 @@ local function performBiomeCheck()
     end
 end
 
-print("[Sol's Tracker] Đang khởi động hệ thống V9.2 (Sharp Slide In-game UI)...")
+print("[Sol's Tracker] Đang khởi động hệ thống V9.4 (Fixed 10-Digit ID & Purple Jester)...")
 showNotification(nil) 
 
 local wsBiome = Workspace:FindFirstChild("Biome")
