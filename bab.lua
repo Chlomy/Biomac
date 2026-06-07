@@ -1,5 +1,5 @@
 -- ==========================================
--- SOL'S RNG TRACKER V10.2 (ALL BIOMES UNLOCKED)
+-- SOL'S RNG TRACKER V10.3 (FIXED & REVERTED)
 -- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -51,7 +51,7 @@ local BIOME_VISUALS = {
     ["GLITCHED"] = {Color = 0xBFFF00, Image = "https://images-ext-1.discordapp.net/external/y4yKovwiS0dYo0PYSCREZVNUr6uKJbQUEeTmKhPv8Hc/https/i.postimg.cc/W3Lhtn5g/image.png?format=webp&quality=lossless"}
 }
 
--- IN-GAME NOTIFICATION UI (ULTRA PREMIUM)
+-- IN-GAME NOTIFICATION UI (SAFE V9.9 REVERT WITH BETTER PADDING)
 local SolsTrackerGUI = Instance.new("ScreenGui")
 SolsTrackerGUI.Name = "SolsTrackerNotification"
 SolsTrackerGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -65,28 +65,16 @@ local posVisible = UDim2.new(0, 15, 0, 55)
 local NotifFrame = Instance.new("Frame")
 NotifFrame.Name = "NotifFrame"
 NotifFrame.Parent = SolsTrackerGUI
-NotifFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+NotifFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 NotifFrame.BackgroundTransparency = 0.05
 NotifFrame.Position = posHidden 
-NotifFrame.Size = UDim2.new(0, 260, 0, 70) 
+NotifFrame.Size = UDim2.new(0, 250, 0, 65) 
 NotifFrame.BorderSizePixel = 0
 NotifFrame.Visible = false
 
-local Shadow = Instance.new("ImageLabel")
-Shadow.Name = "Shadow"
-Shadow.Parent = NotifFrame
-Shadow.BackgroundTransparency = 1
-Shadow.Size = UDim2.new(1, 10, 1, 10)
-Shadow.Position = UDim2.new(0, -5, 0, -5)
-Shadow.Image = "rbxassetid://6014261993"
-Shadow.ImageColor3 = Color3.new(0, 0, 0)
-Shadow.ImageTransparency = 0.5
-Shadow.ScaleType = Enum.ScaleType.Slice
-Shadow.SliceCenter = Rect.new(10, 10, 118, 118)
-
 local UIStroke = Instance.new("UIStroke")
 UIStroke.Parent = NotifFrame
-UIStroke.Color = Color3.fromRGB(55, 55, 75)
+UIStroke.Color = Color3.fromRGB(60, 60, 75)
 UIStroke.Thickness = 1.2
 UIStroke.LineJoinMode = Enum.LineJoinMode.Miter 
 
@@ -101,24 +89,23 @@ AccentLine.Parent = NotifFrame
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Parent = NotifFrame
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Position = UDim2.new(0, 30, 0, 15) 
-TitleLabel.Size = UDim2.new(1, -40, 0, 12)
+TitleLabel.Position = UDim2.new(0, 22, 0, 12) 
+TitleLabel.Size = UDim2.new(1, -30, 0, 14)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.Text = "SYSTEM UPDATE"
-TitleLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
-TitleLabel.TextSize = 10
-TitleLabel.LetterSpacing = 1.2
+TitleLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+TitleLabel.TextSize = 11
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local InfoLabel = Instance.new("TextLabel")
 InfoLabel.Parent = NotifFrame
 InfoLabel.BackgroundTransparency = 1
-InfoLabel.Position = UDim2.new(0, 30, 0, 35) 
-InfoLabel.Size = UDim2.new(1, -40, 0, 20)
-InfoLabel.Font = Enum.Font.GothamBold
+InfoLabel.Position = UDim2.new(0, 22, 0, 32) 
+InfoLabel.Size = UDim2.new(1, -30, 0, 18)
+InfoLabel.Font = Enum.Font.GothamSemibold
 InfoLabel.Text = "Awaiting data..."
 InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-InfoLabel.TextSize = 16
+InfoLabel.TextSize = 15
 InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local hideTask = nil
@@ -304,6 +291,7 @@ local function triggerBiomeChange(newBiome)
     
     showNotification(currentBiome)
     
+    -- ALLOW ALL BIOMES (INCLUDING NULL AND NORMAL) TO SEND WEBHOOK
     if oldBiome ~= "" then 
         sendDiscordEmbed("Biome", oldBiome, true) 
     end
