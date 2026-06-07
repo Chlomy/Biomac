@@ -1,3 +1,6 @@
+-- ==========================================
+-- SOL'S RNG TRACKER V9.2 (SHARP SLIDE UI UPDATE)
+-- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -38,6 +41,9 @@ local BIOME_VISUALS = {
     ["GLITCHED"] = {Color = 0xBFFF00, Image = "https://images-ext-1.discordapp.net/external/y4yKovwiS0dYo0PYSCREZVNUr6uKJbQUEeTmKhPv8Hc/https/i.postimg.cc/W3Lhtn5g/image.png?format=webp&quality=lossless"}
 }
 
+-- ==========================================
+-- GIAO DIỆN THÔNG BÁO IN-GAME (SHARP & SLIDING)
+-- ==========================================
 local SolsTrackerGUI = Instance.new("ScreenGui")
 SolsTrackerGUI.Name = "SolsTrackerNotification"
 SolsTrackerGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -45,35 +51,28 @@ SolsTrackerGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local success = pcall(function() SolsTrackerGUI.Parent = CoreGui end)
 if not success then SolsTrackerGUI.Parent = player:WaitForChild("PlayerGui") end
 
+-- Tọa độ trượt
+local posHidden = UDim2.new(0, -350, 0, 55) -- Giấu hẳn ra ngoài lề trái
+local posVisible = UDim2.new(0, 15, 0, 55)  -- Vị trí khi xuất hiện
+
 local NotifFrame = Instance.new("Frame")
 NotifFrame.Name = "NotifFrame"
 NotifFrame.Parent = SolsTrackerGUI
-NotifFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-NotifFrame.BackgroundTransparency = 0.05
-NotifFrame.Position = UDim2.new(0, -300, 0, 55)
+NotifFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18) -- Nền tối nhám
+NotifFrame.BackgroundTransparency = 0.1
+NotifFrame.Position = posHidden 
 NotifFrame.Size = UDim2.new(0, 230, 0, 60)
-NotifFrame.BorderSizePixel = 0
+NotifFrame.BorderSizePixel = 1 -- Viền góc cạnh 1px cứng cáp
+NotifFrame.BorderColor3 = Color3.fromRGB(45, 45, 55)
 NotifFrame.Visible = false
-
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 8)
-UICorner.Parent = NotifFrame
-
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(45, 45, 60)
-UIStroke.Thickness = 1.5
-UIStroke.Parent = NotifFrame
 
 local AccentLine = Instance.new("Frame")
 AccentLine.Name = "AccentLine"
-AccentLine.Size = UDim2.new(0, 4, 1, 0)
+AccentLine.Size = UDim2.new(0, 3, 1, 0)
+AccentLine.Position = UDim2.new(0, 0, 0, 0)
 AccentLine.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 AccentLine.BorderSizePixel = 0
 AccentLine.Parent = NotifFrame
-
-local AccentCorner = Instance.new("UICorner")
-AccentCorner.CornerRadius = UDim.new(0, 8)
-AccentCorner.Parent = AccentLine
 
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Parent = NotifFrame
@@ -82,7 +81,7 @@ TitleLabel.Position = UDim2.new(0, 16, 0, 10)
 TitleLabel.Size = UDim2.new(1, -26, 0.4, 0)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.Text = "SYSTEM UPDATE"
-TitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+TitleLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 TitleLabel.TextSize = 11
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -107,15 +106,12 @@ local function checkWebhookValid()
     return false
 end
 
-local tweenInfoIn = TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-local tweenInfoOut = TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-local posHidden = UDim2.new(0, -300, 0, 55)
-local posVisible = UDim2.new(0, 15, 0, 55)
+-- Hiệu ứng trượt Quad dứt khoát
+local tweenInfoSlideIn = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local tweenInfoSlideOut = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 
 local function showNotification(biomeText)
     local isWhValid = checkWebhookValid()
-    
-    NotifFrame.Visible = true
     
     if biomeText then
         TitleLabel.Text = "BIOME DETECTED"
@@ -141,13 +137,17 @@ local function showNotification(biomeText)
         end
     end
     
-    local slideIn = TweenService:Create(NotifFrame, tweenInfoIn, {Position = posVisible})
+    NotifFrame.Visible = true
+    
+    -- Animation trượt từ trái vào
+    local slideIn = TweenService:Create(NotifFrame, tweenInfoSlideIn, {Position = posVisible})
     slideIn:Play()
     
     if hideTask then task.cancel(hideTask) end
     
+    -- Animation trượt ngược ra trái để biến mất sau 4 giây
     hideTask = task.delay(4, function()
-        local slideOut = TweenService:Create(NotifFrame, tweenInfoOut, {Position = posHidden})
+        local slideOut = TweenService:Create(NotifFrame, tweenInfoSlideOut, {Position = posHidden})
         slideOut:Play()
         slideOut.Completed:Wait()
         NotifFrame.Visible = false
@@ -274,6 +274,7 @@ local function triggerBiomeChange(newBiome)
     local oldBiome = currentBiome
     currentBiome = newBiome
     
+    -- GỌI HIỆU ỨNG TRƯỢT MÀN HÌNH
     showNotification(currentBiome)
     
     if oldBiome ~= "" and oldBiome ~= "NORMAL" and oldBiome ~= "NULL" then 
@@ -332,6 +333,7 @@ local function performBiomeCheck()
     end
 end
 
+print("[Sol's Tracker] Đang khởi động hệ thống V9.2 (Sharp Slide In-game UI)...")
 showNotification(nil) 
 
 local wsBiome = Workspace:FindFirstChild("Biome")
