@@ -1,5 +1,5 @@
 -- ==========================================
--- SOL'S RNG TRACKER V9.8 (CLEAN & SILENT)
+-- SOL'S RNG TRACKER V9.9 (PREMIUM UI UPDATE)
 -- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -56,7 +56,7 @@ local BIOME_VISUALS = {
 }
 
 -- ==========================================
--- IN-GAME NOTIFICATION UI (SHARP & SLIDING)
+-- PREMIUM UI & NOTIFICATION
 -- ==========================================
 local SolsTrackerGUI = Instance.new("ScreenGui")
 SolsTrackerGUI.Name = "SolsTrackerNotification"
@@ -71,17 +71,22 @@ local posVisible = UDim2.new(0, 15, 0, 55)
 local NotifFrame = Instance.new("Frame")
 NotifFrame.Name = "NotifFrame"
 NotifFrame.Parent = SolsTrackerGUI
-NotifFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-NotifFrame.BackgroundTransparency = 0.1
+NotifFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+NotifFrame.BackgroundTransparency = 0.05
 NotifFrame.Position = posHidden 
-NotifFrame.Size = UDim2.new(0, 230, 0, 60)
-NotifFrame.BorderSizePixel = 1
-NotifFrame.BorderColor3 = Color3.fromRGB(45, 45, 55)
+NotifFrame.Size = UDim2.new(0, 240, 0, 60)
+NotifFrame.BorderSizePixel = 0 
 NotifFrame.Visible = false
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Parent = NotifFrame
+UIStroke.Color = Color3.fromRGB(65, 65, 80)
+UIStroke.Thickness = 1.5
+UIStroke.LineJoinMode = Enum.LineJoinMode.Miter 
 
 local AccentLine = Instance.new("Frame")
 AccentLine.Name = "AccentLine"
-AccentLine.Size = UDim2.new(0, 3, 1, 0)
+AccentLine.Size = UDim2.new(0, 4, 1, 0)
 AccentLine.Position = UDim2.new(0, 0, 0, 0)
 AccentLine.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 AccentLine.BorderSizePixel = 0
@@ -90,8 +95,8 @@ AccentLine.Parent = NotifFrame
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Parent = NotifFrame
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Position = UDim2.new(0, 16, 0, 10)
-TitleLabel.Size = UDim2.new(1, -26, 0.4, 0)
+TitleLabel.Position = UDim2.new(0, 22, 0, 12)
+TitleLabel.Size = UDim2.new(1, -30, 0, 14)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.Text = "SYSTEM UPDATE"
 TitleLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -101,12 +106,12 @@ TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 local InfoLabel = Instance.new("TextLabel")
 InfoLabel.Parent = NotifFrame
 InfoLabel.BackgroundTransparency = 1
-InfoLabel.Position = UDim2.new(0, 16, 0.4, 6)
-InfoLabel.Size = UDim2.new(1, -26, 0.5, 0)
+InfoLabel.Position = UDim2.new(0, 22, 0, 30)
+InfoLabel.Size = UDim2.new(1, -30, 0, 18)
 InfoLabel.Font = Enum.Font.GothamSemibold
 InfoLabel.Text = "Awaiting data..."
 InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-InfoLabel.TextSize = 14
+InfoLabel.TextSize = 15
 InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local hideTask = nil
@@ -119,8 +124,8 @@ local function checkWebhookValid()
     return false
 end
 
-local tweenInfoSlideIn = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local tweenInfoSlideOut = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+local tweenInfoSlideIn = TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local tweenInfoSlideOut = TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
 
 local function showNotification(biomeText)
     local isWhValid = checkWebhookValid()
@@ -156,7 +161,7 @@ local function showNotification(biomeText)
     
     if hideTask then task.cancel(hideTask) end
     
-    hideTask = task.delay(4, function()
+    hideTask = task.delay(4.5, function()
         local slideOut = TweenService:Create(NotifFrame, tweenInfoSlideOut, {Position = posHidden})
         slideOut:Play()
         slideOut.Completed:Wait()
