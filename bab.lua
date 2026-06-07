@@ -1,5 +1,5 @@
 -- ==========================================
--- SOL'S RNG TRACKER V10.3 (FIXED & REVERTED)
+-- SOL'S RNG TRACKER V10.5 (ULTIMATE STEALTH ANTI-AFK)
 -- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -11,12 +11,28 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
 
 if getgenv().SolsTrackerLoop then task.cancel(getgenv().SolsTrackerLoop) end
+if getgenv().AntiAfkLoop then task.cancel(getgenv().AntiAfkLoop) end
 if getgenv().BiomeConnections then
     for _, conn in ipairs(getgenv().BiomeConnections) do conn:Disconnect() end
 end
 getgenv().BiomeConnections = {}
 
--- STEALTH ANTI-AFK (VIM)
+-- ==========================================
+-- ACTIVE STEALTH ANTI-AFK (NON-INTRUSIVE)
+-- ==========================================
+getgenv().AntiAfkLoop = task.spawn(function()
+    while true do
+        task.wait(60) -- Chủ động reset đồng hồ của Sol's RNG mỗi 60s
+        pcall(function()
+            -- Dùng phím tàng hình F24 thay vì click chuột để bảo toàn Camera
+            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F24, false, game)
+            task.wait(0.1)
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F24, false, game)
+        end)
+    end
+end)
+
+-- AFK BACKUP CHO HỆ THỐNG ROBLOX
 local antiAfkConn = player.Idled:Connect(function()
     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F24, false, game)
     task.wait(0.1)
@@ -24,7 +40,9 @@ local antiAfkConn = player.Idled:Connect(function()
 end)
 table.insert(getgenv().BiomeConnections, antiAfkConn)
 
+-- ==========================================
 -- CLEAN UP OLD UI
+-- ==========================================
 local oldGui = CoreGui:FindFirstChild("SolsTrackerNotification") or player:WaitForChild("PlayerGui"):FindFirstChild("SolsTrackerNotification")
 if oldGui then oldGui:Destroy() end
 
@@ -51,7 +69,9 @@ local BIOME_VISUALS = {
     ["GLITCHED"] = {Color = 0xBFFF00, Image = "https://images-ext-1.discordapp.net/external/y4yKovwiS0dYo0PYSCREZVNUr6uKJbQUEeTmKhPv8Hc/https/i.postimg.cc/W3Lhtn5g/image.png?format=webp&quality=lossless"}
 }
 
--- IN-GAME NOTIFICATION UI (SAFE V9.9 REVERT WITH BETTER PADDING)
+-- ==========================================
+-- IN-GAME NOTIFICATION UI (ULTRA PREMIUM)
+-- ==========================================
 local SolsTrackerGUI = Instance.new("ScreenGui")
 SolsTrackerGUI.Name = "SolsTrackerNotification"
 SolsTrackerGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -163,7 +183,9 @@ local function showNotification(biomeText)
     end)
 end
 
+-- ==========================================
 -- DISCORD WEBHOOK HANDLER
+-- ==========================================
 local function sendDiscordEmbed(eventType, name, isEnd)
     local webhookUrl = getgenv().Webhook
     if not webhookUrl or webhookUrl == "" then return false end
@@ -245,7 +267,9 @@ local function sendDiscordEmbed(eventType, name, isEnd)
     end
 end
 
+-- ==========================================
 -- BIOME DETECTOR & PARSER
+-- ==========================================
 local function parseBiome(rawText, isStrict)
     if not rawText or rawText == "" then return nil end
     
@@ -291,7 +315,6 @@ local function triggerBiomeChange(newBiome)
     
     showNotification(currentBiome)
     
-    -- ALLOW ALL BIOMES (INCLUDING NULL AND NORMAL) TO SEND WEBHOOK
     if oldBiome ~= "" then 
         sendDiscordEmbed("Biome", oldBiome, true) 
     end
@@ -346,7 +369,9 @@ local function performBiomeCheck()
     end
 end
 
+-- ==========================================
 -- INITIALIZATION
+-- ==========================================
 showNotification(nil) 
 
 local wsBiome = Workspace:FindFirstChild("Biome")
