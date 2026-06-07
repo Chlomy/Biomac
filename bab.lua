@@ -1,5 +1,5 @@
 -- ==========================================
--- SOL'S RNG TRACKER V9.4 (VIP SERVER ID & PURPLE JESTER)
+-- SOL'S RNG TRACKER V9.6 (DELTA OPTIMIZED & STEALTH ANTI-AFK)
 -- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -15,6 +15,21 @@ if getgenv().BiomeConnections then
 end
 getgenv().BiomeConnections = {}
 
+-- ==========================================
+-- HỆ THỐNG ANTI-AFK (CẮT ĐỨT TÍN HIỆU KICK DÀNH CHO DELTA)
+-- ==========================================
+local antiAfkConn = player.Idled:Connect(function()
+    if getconnections then
+        for _, conn in pairs(getconnections(player.Idled)) do
+            conn:Disable()
+        end
+    end
+end)
+table.insert(getgenv().BiomeConnections, antiAfkConn)
+
+-- ==========================================
+-- DỌN DẸP UI CŨ
+-- ==========================================
 local oldGui = CoreGui:FindFirstChild("SolsTrackerNotification") or player:WaitForChild("PlayerGui"):FindFirstChild("SolsTrackerNotification")
 if oldGui then oldGui:Destroy() end
 
@@ -161,12 +176,11 @@ local function sendDiscordEmbed(eventType, name, isEnd)
     local jobId = game.JobId ~= "" and game.JobId or "Private/Studio"
     local psLink = getgenv().PSLink or ""
     
-    -- LẤY CHUẨN ID ACC/SERVER (10 SỐ)
     local serverId = ""
     if game.VIPServerOwnerId and game.VIPServerOwnerId ~= 0 then
-        serverId = tostring(game.VIPServerOwnerId) -- ID của chủ Private Server
+        serverId = tostring(game.VIPServerOwnerId) 
     else
-        serverId = tostring(player.UserId) -- ID của người đang cắm macro nếu ở Public Server
+        serverId = tostring(player.UserId) 
     end
 
     local defaultServerDisplay = (psLink ~= "") and ("[Private Server Link](" .. psLink .. ")") or ("`" .. jobId .. "`")
@@ -182,7 +196,6 @@ local function sendDiscordEmbed(eventType, name, isEnd)
         local icon = "🛒"
         if name == "Mari" then icon = "🛍️"; colorHex = 0xE91E63; pingContent = getgenv().PingMari or ""
         elseif name == "Rin" then icon = "🦊"; colorHex = 0xE67E22; pingContent = getgenv().PingRin or ""
-        -- Đổi chuẩn màu Jester về Tím Neon (0x9B59B6)
         elseif name == "Jester" then icon = "🃏"; colorHex = 0x9B59B6; pingContent = getgenv().PingJester or "" end
         
         titleText = icon .. " " .. name .. " Has Arrived!"
@@ -203,7 +216,6 @@ local function sendDiscordEmbed(eventType, name, isEnd)
             titleText = "👾 🙽 GLITCHED BIOME " .. state .. " 🙽"
         end
 
-        -- KHI END BIOME THÌ CHỈ HIỆN 10 SỐ ID
         local finalServerDisplay = defaultServerDisplay
         if isEnd then
             finalServerDisplay = "`" .. serverId .. "`"
@@ -336,7 +348,7 @@ local function performBiomeCheck()
     end
 end
 
-print("[Sol's Tracker] Đang khởi động hệ thống V9.4 (Fixed 10-Digit ID & Purple Jester)...")
+print("[Sol's Tracker] Đang khởi động hệ thống V9.6 (Delta Anti-AFK)...")
 showNotification(nil) 
 
 local wsBiome = Workspace:FindFirstChild("Biome")
