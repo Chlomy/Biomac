@@ -1,5 +1,5 @@
 -- ==========================================
--- SOL'S RNG TRACKER V10.5 (ULTIMATE STEALTH ANTI-AFK)
+-- SOL'S RNG TRACKER V10.7 (RIGHT-CLICK ANTI-AFK)
 -- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -18,25 +18,25 @@ end
 getgenv().BiomeConnections = {}
 
 -- ==========================================
--- ACTIVE STEALTH ANTI-AFK (NON-INTRUSIVE)
+-- ACTIVE STEALTH ANTI-AFK (RIGHT-CLICK)
 -- ==========================================
 getgenv().AntiAfkLoop = task.spawn(function()
     while true do
-        task.wait(60) -- Chủ động reset đồng hồ của Sol's RNG mỗi 60s
+        task.wait(60) 
         pcall(function()
-            -- Dùng phím tàng hình F24 thay vì click chuột để bảo toàn Camera
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F24, false, game)
+            -- Button 1 is Right-Click. Coordinates: (0, 50)
+            VirtualInputManager:SendMouseButtonEvent(0, 50, 1, true, game, 0)
             task.wait(0.1)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F24, false, game)
+            VirtualInputManager:SendMouseButtonEvent(0, 50, 1, false, game, 0)
         end)
     end
 end)
 
--- AFK BACKUP CHO HỆ THỐNG ROBLOX
+-- NATIVE ROBLOX AFK BYPASS BACKUP
 local antiAfkConn = player.Idled:Connect(function()
-    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F24, false, game)
+    VirtualInputManager:SendMouseButtonEvent(0, 50, 1, true, game, 0)
     task.wait(0.1)
-    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F24, false, game)
+    VirtualInputManager:SendMouseButtonEvent(0, 50, 1, false, game, 0)
 end)
 table.insert(getgenv().BiomeConnections, antiAfkConn)
 
@@ -70,7 +70,7 @@ local BIOME_VISUALS = {
 }
 
 -- ==========================================
--- IN-GAME NOTIFICATION UI (ULTRA PREMIUM)
+-- IN-GAME NOTIFICATION UI (SAFE V9.9 REVERT)
 -- ==========================================
 local SolsTrackerGUI = Instance.new("ScreenGui")
 SolsTrackerGUI.Name = "SolsTrackerNotification"
