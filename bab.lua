@@ -1,6 +1,3 @@
--- ==========================================
--- SOL'S RNG TRACKER V9.0 (IN-GAME NOTIFICATION UI)
--- ==========================================
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -15,7 +12,6 @@ if getgenv().BiomeConnections then
 end
 getgenv().BiomeConnections = {}
 
--- XÓA BỎ UI CŨ NẾU CHẠY LẠI SCRIPT
 local oldGui = CoreGui:FindFirstChild("SolsTrackerNotification") or player:WaitForChild("PlayerGui"):FindFirstChild("SolsTrackerNotification")
 if oldGui then oldGui:Destroy() end
 
@@ -42,56 +38,67 @@ local BIOME_VISUALS = {
     ["GLITCHED"] = {Color = 0xBFFF00, Image = "https://images-ext-1.discordapp.net/external/y4yKovwiS0dYo0PYSCREZVNUr6uKJbQUEeTmKhPv8Hc/https/i.postimg.cc/W3Lhtn5g/image.png?format=webp&quality=lossless"}
 }
 
--- ==========================================
--- GIAO DIỆN THÔNG BÁO IN-GAME (UI NOTIFICATION)
--- ==========================================
 local SolsTrackerGUI = Instance.new("ScreenGui")
 SolsTrackerGUI.Name = "SolsTrackerNotification"
 SolsTrackerGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Thử đưa UI vào CoreGui để chống mất khi reset nhân vật, nếu không được thì ném vào PlayerGui
 local success = pcall(function() SolsTrackerGUI.Parent = CoreGui end)
 if not success then SolsTrackerGUI.Parent = player:WaitForChild("PlayerGui") end
 
 local NotifFrame = Instance.new("Frame")
 NotifFrame.Name = "NotifFrame"
 NotifFrame.Parent = SolsTrackerGUI
-NotifFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-NotifFrame.BackgroundTransparency = 0.15
-NotifFrame.Position = UDim2.new(0, 15, 0, 55) -- Góc trái, lệch xuống một chút để né nút Roblox ESC
-NotifFrame.Size = UDim2.new(0, 220, 0, 55)
+NotifFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+NotifFrame.BackgroundTransparency = 0.05
+NotifFrame.Position = UDim2.new(0, -300, 0, 55)
+NotifFrame.Size = UDim2.new(0, 230, 0, 60)
 NotifFrame.BorderSizePixel = 0
 NotifFrame.Visible = false
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 6)
+UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = NotifFrame
 
-local BiomeLabel = Instance.new("TextLabel")
-BiomeLabel.Parent = NotifFrame
-BiomeLabel.BackgroundTransparency = 1
-BiomeLabel.Position = UDim2.new(0, 12, 0, 8)
-BiomeLabel.Size = UDim2.new(1, -24, 0.5, -8)
-BiomeLabel.Font = Enum.Font.GothamBold
-BiomeLabel.Text = "Biome: Checking..."
-BiomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-BiomeLabel.TextSize = 14
-BiomeLabel.TextXAlignment = Enum.TextXAlignment.Left
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(45, 45, 60)
+UIStroke.Thickness = 1.5
+UIStroke.Parent = NotifFrame
 
-local WebhookLabel = Instance.new("TextLabel")
-WebhookLabel.Parent = NotifFrame
-WebhookLabel.BackgroundTransparency = 1
-WebhookLabel.Position = UDim2.new(0, 12, 0.5, 2)
-WebhookLabel.Size = UDim2.new(1, -24, 0.5, -8)
-WebhookLabel.Font = Enum.Font.GothamSemibold
-WebhookLabel.Text = "Webhook: Checking..."
-WebhookLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-WebhookLabel.TextSize = 12
-WebhookLabel.TextXAlignment = Enum.TextXAlignment.Left
+local AccentLine = Instance.new("Frame")
+AccentLine.Name = "AccentLine"
+AccentLine.Size = UDim2.new(0, 4, 1, 0)
+AccentLine.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+AccentLine.BorderSizePixel = 0
+AccentLine.Parent = NotifFrame
+
+local AccentCorner = Instance.new("UICorner")
+AccentCorner.CornerRadius = UDim.new(0, 8)
+AccentCorner.Parent = AccentLine
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Parent = NotifFrame
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Position = UDim2.new(0, 16, 0, 10)
+TitleLabel.Size = UDim2.new(1, -26, 0.4, 0)
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.Text = "SYSTEM UPDATE"
+TitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+TitleLabel.TextSize = 11
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local InfoLabel = Instance.new("TextLabel")
+InfoLabel.Parent = NotifFrame
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.Position = UDim2.new(0, 16, 0.4, 6)
+InfoLabel.Size = UDim2.new(1, -26, 0.5, 0)
+InfoLabel.Font = Enum.Font.GothamSemibold
+InfoLabel.Text = "Awaiting data..."
+InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+InfoLabel.TextSize = 14
+InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local hideTask = nil
 
--- Hàm check webhook sơ bộ
 local function checkWebhookValid()
     local wh = getgenv().Webhook or ""
     if string.find(wh, "discord.com/api/webhooks") or string.find(wh, "discordapp.com/api/webhooks") then
@@ -100,43 +107,53 @@ local function checkWebhookValid()
     return false
 end
 
--- Hàm kích hoạt thông báo góc màn hình
+local tweenInfoIn = TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local tweenInfoOut = TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+local posHidden = UDim2.new(0, -300, 0, 55)
+local posVisible = UDim2.new(0, 15, 0, 55)
+
 local function showNotification(biomeText)
     local isWhValid = checkWebhookValid()
     
     NotifFrame.Visible = true
-    NotifFrame.BackgroundTransparency = 0.15
-    BiomeLabel.TextTransparency = 0
-    WebhookLabel.TextTransparency = 0
     
-    BiomeLabel.Text = "Biome: " .. (biomeText or "Unknown")
-    
-    if isWhValid then
-        WebhookLabel.Text = "Webhook: Active & Valid"
-        WebhookLabel.TextColor3 = Color3.fromRGB(85, 255, 85) -- Màu xanh lá
+    if biomeText then
+        TitleLabel.Text = "BIOME DETECTED"
+        InfoLabel.Text = biomeText
+        
+        if BIOME_VISUALS[biomeText] then
+            AccentLine.BackgroundColor3 = Color3.fromRGB(
+                math.floor(BIOME_VISUALS[biomeText].Color / 65536),
+                math.floor((BIOME_VISUALS[biomeText].Color % 65536) / 256),
+                BIOME_VISUALS[biomeText].Color % 256
+            )
+        else
+            AccentLine.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+        end
     else
-        WebhookLabel.Text = "Webhook: Invalid/Empty!"
-        WebhookLabel.TextColor3 = Color3.fromRGB(255, 85, 85) -- Màu đỏ
+        TitleLabel.Text = "WEBHOOK STATUS"
+        if isWhValid then
+            InfoLabel.Text = "Active & Connected"
+            AccentLine.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+        else
+            InfoLabel.Text = "Invalid / Empty Link"
+            AccentLine.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+        end
     end
     
-    -- Hủy tiến trình ẩn cũ nếu có Biome mới đè lên
+    local slideIn = TweenService:Create(NotifFrame, tweenInfoIn, {Position = posVisible})
+    slideIn:Play()
+    
     if hideTask then task.cancel(hideTask) end
     
-    -- Đếm ngược 4 giây rồi làm mờ đi
     hideTask = task.delay(4, function()
-        local ts1 = TweenService:Create(NotifFrame, TweenInfo.new(1), {BackgroundTransparency = 1})
-        local ts2 = TweenService:Create(BiomeLabel, TweenInfo.new(1), {TextTransparency = 1})
-        local ts3 = TweenService:Create(WebhookLabel, TweenInfo.new(1), {TextTransparency = 1})
-        
-        ts1:Play() ts2:Play() ts3:Play()
-        ts1.Completed:Wait()
+        local slideOut = TweenService:Create(NotifFrame, tweenInfoOut, {Position = posHidden})
+        slideOut:Play()
+        slideOut.Completed:Wait()
         NotifFrame.Visible = false
     end)
 end
 
--- ==========================================
--- HÀM GỬI WEBHOOK
--- ==========================================
 local function sendDiscordEmbed(eventType, name, isEnd)
     local webhookUrl = getgenv().Webhook
     if not webhookUrl or webhookUrl == "" then return false end
@@ -216,9 +233,6 @@ local function sendDiscordEmbed(eventType, name, isEnd)
     end
 end
 
--- ==========================================
--- BỘ QUÉT LÕI & LỌC BIOME
--- ==========================================
 local function parseBiome(rawText, isStrict)
     if not rawText or rawText == "" then return nil end
     
@@ -260,7 +274,6 @@ local function triggerBiomeChange(newBiome)
     local oldBiome = currentBiome
     currentBiome = newBiome
     
-    -- GỌI UI THÔNG BÁO GÓC MÀN HÌNH MỖI KHI CÓ BIOME MỚI
     showNotification(currentBiome)
     
     if oldBiome ~= "" and oldBiome ~= "NORMAL" and oldBiome ~= "NULL" then 
@@ -319,8 +332,7 @@ local function performBiomeCheck()
     end
 end
 
-print("[Sol's Tracker] Đang khởi động hệ thống V9.0 (Giao diện UI mượt mà)...")
-showNotification("Starting System...") -- Bắn thông báo nháp lúc vừa execute để test UI
+showNotification(nil) 
 
 local wsBiome = Workspace:FindFirstChild("Biome")
 if wsBiome and wsBiome:IsA("StringValue") then
